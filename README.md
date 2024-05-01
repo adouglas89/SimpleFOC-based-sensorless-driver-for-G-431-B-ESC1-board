@@ -12,3 +12,8 @@ I am using the JD power 3151C motor, which is a low cogging motor (ring ceramic 
 This is for the TW4 energy recovery ventilator fan.
 There will be another board at some point that will run a very similar program, in production.
 Note that these exact boards tend to get hot, that's just a quirk of the hardware.
+
+
+The plan is to use the same strategy for sensorless commutation as the odrive, which is described here : https://cas.mines-paristech.fr/~praly/Telechargement/Journaux/2010-IEEE_TPEL-Lee-Hong-Nam-Ortega-Praly-Astolfi.pdf
+
+see the actual code here https://github.com/odriverobotics/ODrive/blob/master/Firmware/MotorControl/sensorless_estimator.cpp
