@@ -99,7 +99,86 @@ void overcurrent_trip(){// if it stalls this won't help except at higher powers,
     voltage_override = 0;
   }
 }
+float track_return_motor_timing(float v_pA, float v_pB, float current_A, float current_B) {
+    // Algorithm based on paper: Sensorless Control of Surface-Mount Permanent-Magnet Synchronous Motors Based on a Nonlinear Observer
+    // http://cas.ensmp.fr/~praly/Telechargement/Journaux/2010-IEEE_TPEL-Lee-Hong-Nam-Ortega-Praly-Astolfi.pdf
+    // In particular, equation 8 (and by extension eqn 4 and 6).
 
+    // The V_alpha_beta applied immedietly prior to the current measurement associated with this cycle
+    // is the one computed two cycles ago. To get the correct measurement, it was stored twice:
+    // once by final_v_alpha/final_v_beta in the current control reporting, and once by V_alpha_beta_memory.
+
+    // PLL
+    // TODO: the PLL part has some code duplication with the encoder PLL
+    // Pll gains as a function of bandwidth
+    // don't engage the system by calling this function until a suitable RPM is achieved or yu will just get nonsense results
+    static V_alpha_beta_memory_[0] = 0.0f;
+    static V_alpha_beta_memory_[1] = 0.0f;
+    static flux_state_[0] = 0.0f;
+    static flux_state_[1] = 0.0f;
+    float  observer_gain = ? // IDK what a reasonable starting point is, may have to try several.  Too high and it will bounce around, too low and it will take a long time to catch up with changes.
+    float O_phase_resistance = ?// in ohms presumably
+    float O_phase_inductance =  // in henries presumably
+    float O_flux_linkage = // it's in units of webers presumably, which is ampere-turns? Can be calculated from the peak to peak per hz, which is easy to measure, so find the equation for that and use that to calc it before then use that.
+    static last_run_ts = millis();
+    float ms_since_last_run = float(ticks_diff(last_run_ts, millis());
+    float s_since_last_run = ms_since_last_run/1000
+    float current_meas_period = s_since_last_run
+    // Clarke transform
+    float I_alpha_beta[2] = {
+       current_A,
+        one_by_sqrt3 * (current_B - (-current_B-current_A))};
+
+    // alpha-beta vector operations
+    float eta[2];
+    for (int i = 0; i <= 1; ++i) {
+        // y is the total flux-driving voltage (see paper eqn 4)
+        float y = -O_phase_resistance * I_alpha_beta[i] + V_alpha_beta_memory_[i];
+        // flux dynamics (prediction)
+        float x_dot = y;
+        // integrate prediction to current timestep
+        flux_state_[i] += x_dot * current_meas_period;
+
+        // eta is the estimated permanent magnet flux (see paper eqn 6)
+        eta[i] = flux_state_[i] - O_phase_inductance * I_alpha_beta[i];
+    }
+
+    // Non-linear observer (see paper eqn 8):
+    float pm_flux_sqr = O_flux_linkage * O_flux_linkage;
+    float est_pm_flux_sqr = eta[0] * eta[0] + eta[1] * eta[1];
+    float bandwidth_factor = 1.0f / pm_flux_sqr;
+    float eta_factor = 0.5f * (observer_gain * bandwidth_factor) * (pm_flux_sqr - est_pm_flux_sqr);
+
+    // alpha-beta vector operations
+    for (int i = 0; i <= 1; ++i) {
+        // add observer action to flux estimate dynamics
+        float x_dot = eta_factor * eta[i];
+        // convert action to discrete-time
+        flux_state_[i] += x_dot * current_meas_period;
+        // update new eta
+        eta[i] = flux_state_[i] - O_phase_inductance * I_alpha_beta[i];
+    }
+
+    // Flux state estimation done, store V_alpha_beta for next timestep
+    V_alpha_beta_memory_[0] = axis_->motor_.current_control_.final_v_alpha_; // still have to figure out exactly what voltage this is so we can sub in the right one
+    V_alpha_beta_memory_[1] = axis_->motor_.current_control_.final_v_beta_; // same here
+
+    float phase = fast_atan2(eta[1], eta[0]); // do we have fast_atan available?
+
+    return phase;  // the "phase" is the motor timing, in radians presumably, optimal for torque and efficiency is of course pi/2 radians but we need some space to avoid stall too
+};
+
+unsigned long int ticks_diff(unsigned long int t2,unsigned long int t1){ //t2 should be after t1, this is for calculating clock times.
+  if (t2<t1){//t2 must have wrapped around after t1 was taken
+     return (4294967295-(t1-t2));
+  }
+     return (t2-t1);
+} 
+float get_mA(){// this is the estimated current being drawn from the power supply, not the actual motor current which is a bit different
+   float x =0;
+   x = currentlf_now*motor.voltage_limit/24;
+   return  1000*((4.0384440932900223e-002)+3.4514090071108776e-002*x*30);// this is off by like 12 percent in some cases a polynomial of third order fits the data better but might flake out at higher than 500 mA so I didn't try it.
+}
 void setup() {
   Serial.begin(1000000);
   Serial.println("test serial2");
@@ -127,17 +206,7 @@ void setup() {
   goal_speed = 2;
 }
 
-unsigned long int ticks_diff(unsigned long int t2,unsigned long int t1){ //t2 should be after t1, this is for calculating clock times.
-  if (t2<t1){//t2 must have wrapped around after t1 was taken
-     return (4294967295-(t1-t2));
-  }
-     return (t2-t1);
-} 
-float get_mA(){// this is the estimated current being drawn from the power supply, not the actual motor current which is a bit different
-   float x =0;
-   x = currentlf_now*motor.voltage_limit/24;
-   return  1000*((4.0384440932900223e-002)+3.4514090071108776e-002*x*30);// this is off by like 12 percent in some cases a polynomial of third order fits the data better but might flake out at higher than 500 mA so I didn't try it.
-}
+
 void loop() {
      static unsigned long int loop_clock_in = millis();
      unsigned long int loop_time = 0;
