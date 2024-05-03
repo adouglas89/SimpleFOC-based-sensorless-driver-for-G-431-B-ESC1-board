@@ -118,16 +118,16 @@ float track_return_motor_timing(float v_pA, float v_pB, float current_A, float c
     static V_alpha_beta_memory_[1] = 0.0f;
     static flux_state_[0] = 0.0f;
     static flux_state_[1] = 0.0f;
-    static last_v_alpha = 0
-    static last_v_beta = 0
-    float  observer_gain = 1000 // IDK what a reasonable starting point is, may have to try several.  Too high and it will bounce around, too low and it will take a long time to catch up with changes.
-    float O_phase_resistance = ?// in ohms presumably
-    float O_phase_inductance =  // in henries presumably
-    float O_flux_linkage = // it's in units of webers presumably, which is ampere-turns? Can be calculated from the peak to peak per hz, which is easy to measure, so find the equation for that and use that to calc it before then use that.
+    static last_v_alpha = 0;
+    static last_v_beta = 0;
+    float  observer_gain = 1000; // IDK what a reasonable starting point is, may have to try several.  Too high and it will bounce around, too low and it will take a long time to catch up with changes.
+    float O_phase_resistance = ?;// in ohms presumably
+    float O_phase_inductance =;  // in henries presumably
+    float O_flux_linkage = ;// it's in units of webers presumably, which is ampere-turns? Can be calculated from the peak to peak per hz, which is easy to measure, so find the equation for that and use that to calc it before then use that.
     static last_run_ts = millis();
-    float ms_since_last_run = float(ticks_diff(last_run_ts, millis());
-    float s_since_last_run = ms_since_last_run/1000
-    float current_meas_period = s_since_last_run
+    float ms_since_last_run = float(ticks_diff(last_run_ts, millis()) ;
+    float s_since_last_run = ms_since_last_run/1000 ;
+    float current_meas_period = s_since_last_run ;
     // Clarke transform
     current1.getPhaseCurrents() // this might not be right am trying to update the currents
     current_A = current1.a;
