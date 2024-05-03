@@ -6,6 +6,7 @@ BLDCMotor motor = BLDCMotor(7);
 BLDCDriver6PWM driver = BLDCDriver6PWM(A_PHASE_UH, A_PHASE_UL, A_PHASE_VH, A_PHASE_VL, A_PHASE_WH, A_PHASE_WL);
 LowsideCurrentSense currentSense = LowsideCurrentSense(0.003, -64.0/7.0, A_OP1_OUT, A_OP2_OUT, A_OP3_OUT);
 LowPassFilter diff_filter = LowPassFilter(0.05);
+PhaseCurrent_s current1 = currentSense.getPhaseCurrents();
 float goal_speed =0;
 float v=2;
 float v_diff=1;
@@ -125,6 +126,8 @@ float track_return_motor_timing(float v_pA, float v_pB, float current_A, float c
     float s_since_last_run = ms_since_last_run/1000
     float current_meas_period = s_since_last_run
     // Clarke transform
+    current_A = current1.a;
+    current_B = current1.b;
     float I_alpha_beta[2] = {
        current_A,
         one_by_sqrt3 * (current_B - (-current_B-current_A))};
