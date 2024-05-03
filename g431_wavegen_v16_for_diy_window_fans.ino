@@ -1,4 +1,5 @@
 #include <SimpleFOC.h>
+#include <math.h>
 
 // NUMBER OF POLE PAIRS, NOT POLES, specific to the motor being used!
 BLDCMotor motor = BLDCMotor(7); 
@@ -117,7 +118,9 @@ float track_return_motor_timing(float v_pA, float v_pB, float current_A, float c
     static V_alpha_beta_memory_[1] = 0.0f;
     static flux_state_[0] = 0.0f;
     static flux_state_[1] = 0.0f;
-    float  observer_gain = ? // IDK what a reasonable starting point is, may have to try several.  Too high and it will bounce around, too low and it will take a long time to catch up with changes.
+    static last_v_alpha = 0
+    static last_v_beta = 0
+    float  observer_gain = 1000 // IDK what a reasonable starting point is, may have to try several.  Too high and it will bounce around, too low and it will take a long time to catch up with changes.
     float O_phase_resistance = ?// in ohms presumably
     float O_phase_inductance =  // in henries presumably
     float O_flux_linkage = // it's in units of webers presumably, which is ampere-turns? Can be calculated from the peak to peak per hz, which is easy to measure, so find the equation for that and use that to calc it before then use that.
@@ -164,10 +167,13 @@ float track_return_motor_timing(float v_pA, float v_pB, float current_A, float c
     }
 
     // Flux state estimation done, store V_alpha_beta for next timestep
-    V_alpha_beta_memory_[0] = axis_->motor_.current_control_.final_v_alpha_; // still have to figure out exactly what voltage this is so we can sub in the right one
-    V_alpha_beta_memory_[1] = axis_->motor_.current_control_.final_v_beta_; // same here
 
-    float phase = fast_atan2(eta[1], eta[0]); // do we have fast_atan available?
+
+    V_alpha_beta_memory_[0] = last_v_alpha; // still have to figure out exactly what voltage this is so we can sub in the right one
+    V_alpha_beta_memory_[1] = last_v_beta; // same here
+    last_v_alpha = driver.dc_a * driver.voltage_power_supply;
+    last_v_beta = driver.dc_b * driver.voltage_power_supply;
+    float phase = atan2(eta[1], eta[0]); // do we have fast_atan available? no
 
     return phase;  // the "phase" is the motor timing, in radians presumably, optimal for torque and efficiency is of course pi/2 radians but we need some space to avoid stall too
 };
