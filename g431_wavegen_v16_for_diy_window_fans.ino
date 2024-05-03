@@ -126,6 +126,7 @@ float track_return_motor_timing(float v_pA, float v_pB, float current_A, float c
     float s_since_last_run = ms_since_last_run/1000
     float current_meas_period = s_since_last_run
     // Clarke transform
+    current1.getPhaseCurrents() // this might not be right am trying to update the currents
     current_A = current1.a;
     current_B = current1.b;
     float I_alpha_beta[2] = {
