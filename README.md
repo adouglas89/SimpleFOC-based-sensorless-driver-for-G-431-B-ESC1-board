@@ -17,3 +17,11 @@ Note that these exact boards tend to get hot, that's just a quirk of the hardwar
 The plan is to use the same strategy for sensorless commutation as the odrive, which is described here : https://cas.mines-paristech.fr/~praly/Telechargement/Journaux/2010-IEEE_TPEL-Lee-Hong-Nam-Ortega-Praly-Astolfi.pdf
 
 see the actual code here https://github.com/odriverobotics/ODrive/blob/master/Firmware/MotorControl/sensorless_estimator.cpp
+
+
+The "g431..." file is a basic version of the open loop with voltage ramping etc.  The "sensorless-... with pd_float....ino" file is the observer, with a sub system to try to track the zero crossings of the waveforms.  I did the waveform crossing stuff because the saliency of my motor messed up the observer but I was hoping the wave was still periodic, it doesn't seem to be however.  Thus the ssytem does not work with my motor, and if you have a motor without salience then you don't need the timing part.
+
+sensorless_driver_try_10_observer_seems_to_be_working_at_least.ino is the minimal test system that you probably want, it will run the motor and you can use a debugger or print statements to see the variables changing and verify the observer is working.
+
+Remember the serial is at 1 Mbaud.
+
